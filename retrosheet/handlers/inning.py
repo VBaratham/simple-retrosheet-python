@@ -32,7 +32,7 @@ class Inning(Handler):
         if self.inning != play.inning:
             raise Exception("lost track of # outs or inning. Current play: {}".format(play))
 
-        # Call self.record_out() for each out on the play
+        # Call self._record_out() for each out on the play
 
         # TODO: replace this all w/ a regex
 
@@ -40,11 +40,11 @@ class Inning(Handler):
         if play.event[0].isdigit():
             # If there is an opening parenthesis, it was a double play
             # If there are two, it was a triple play
-            self.record_out(1 + play.event.count('('))
+            self._record_out(1 + play.event.count('('))
 
         # STRIKEOUT
         elif play.event[0] == 'K':
-            self.record_out()
+            self._record_out()
 
         # CAUGHT STEALING
         elif play.event.startswith('CS'):
@@ -54,11 +54,11 @@ class Inning(Handler):
         elif play.event.startswith('PO'):
             # A runner is picked off iff there was no error on the pickoff attempt
             if play.event.find('E') == -1:
-                self.record_out()
+                self._record_out()
                 
         # FC for fielder's choice would be accompanied by X if an out was made
         # We take care of those below
     
         # Record an out for each runner caught advancing, indicated by X
-        self.record_out(play.event.count('X'))
+        self._record_out(play.event.count('X'))
 
