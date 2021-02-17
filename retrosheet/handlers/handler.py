@@ -14,23 +14,23 @@ class Handler(object):
             event.Info: self.handle_info,
             event.Com: self.handle_com,
         }
-    
+
     def handle_id(self, _id):
         pass
 
-    def handle_start(self):
+    def handle_start(self, start):
         pass
 
-    def handle_sub(self):
+    def handle_sub(self, sub):
         pass
 
-    def handle_play(self):
+    def handle_play(self, play):
         pass
 
-    def handle_info(self):
+    def handle_info(self, info):
         pass
 
-    def handle_com(self):
+    def handle_com(self, com):
         pass
 
     def handle(self, pyline):

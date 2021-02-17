@@ -1,2 +1,2 @@
-b = 2
-from .inning import Inning
+from .inning import *
+from .innings_played import *

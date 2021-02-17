@@ -1,1 +1,4 @@
-a = 1
+from .analysis import *
+
+AWAY = 0
+HOME = 1

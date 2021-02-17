@@ -77,13 +77,16 @@ class Analysis(object):
     def register_trigger(self, name, trigger):
         self.triggers[name] = trigger
 
-    def fire_triggers(self, trigger_names):
-        """
-        When a handler returns a trigger, look for a trigger registered under
-        the given names and call them
-        """
-        for trigger_name in trigger_names:
-            self.triggers[trigger_name]()
+    # def fire_triggers(self, trigger_names):
+    #     """
+    #     When a handler returns a trigger, look for a trigger registered under
+    #     the given names and call them
+    #     """
+    #     for trigger_name in trigger_names:
+    #         self.triggers[trigger_name]()
+
+    def fire_trigger(self, trigger_name):
+        self.triggers[trigger_name]()
 
     def preprocess(self):
         pass
@@ -96,12 +99,19 @@ class Analysis(object):
         self.preprocess()
         
         for pyline in self._get_python_stream():
-            triggers_to_fire = []
+            # Fire triggers after all handlers have processed the line:
+            # triggers_to_fire = []
+            # for handler in self.handlers.values():
+            #     new_trigger = handler.handle(pyline)
+            #     if new_trigger:
+            #         triggers_to_fire.append(new_trigger)
+            # self.fire_triggers(trigger_to_fire)
+
+            # Fire triggers as soon as they're triggered:
             for handler in self.handlers.values():
-                new_trigger = handler.handle(pyline)
-                if new_trigger:
-                    triggers_to_fire.append(new_trigger)
-            self.fire_triggers(trigger_to_fire)
+                trigger_name = handler.handle(pyline)
+                if trigger_name:
+                    self.fire_trigger(trigger_name)
 
         self.postprocess()
                 

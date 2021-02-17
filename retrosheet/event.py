@@ -33,21 +33,26 @@ class Sub(EventLine):
         self.battingorder = battingorder
         self.position = position
 
+    def __str__(self):
+        return ','.join([
+            self.playerID, self.playerName, self.homeaway, self.battingorder, self.position,
+        ])
+
 class Play(EventLine):
     # TODO: Create a separate parser for the "play" subfield
-    def __init__(self, inning, homeaway, playerID, count, pitches, play):
+    def __init__(self, inning, homeaway, playerID, count, pitches, event):
         self.inning = inning
         self.homeaway = homeaway
         self.playerID = playerID
         self.count = count
         self.pitches = pitches
-        self.play = play
+        self.event = event
 
     def __str__(self):
         return ','.join([
-            self.inning, self.homeaway, self.playerID, self.count, self.pitches, self.play
+            self.inning, self.homeaway, self.playerID, self.count, self.pitches, self.play,
         ])
-
+    
 class Info(EventLine):
     def __init__(self, fieldname, data):
         self.fieldname = fieldname
