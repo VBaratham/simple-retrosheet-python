@@ -25,10 +25,6 @@ class InningsPlayed(Inning):
     def __init__(self):
         super(InningsPlayed, self).__init__()
         
-        # # map each playerID to the inning (float) they entered
-        # # when a player is removed from the game, they should be removed from this dict
-        # self.when_entered = {}
-
         self.home = InningsPlayedStruct()
         self.away = InningsPlayedStruct()
 
