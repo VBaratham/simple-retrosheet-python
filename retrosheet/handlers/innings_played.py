@@ -28,9 +28,9 @@ class InningsPlayed(Inning):
         self.home = InningsPlayedStruct()
         self.away = InningsPlayedStruct()
 
-    # Rename this function for readability in this subclass of Inning
-    # calling float(self) to get the current inning is pretty opaque
-    # self.inning_as_float makes a bit more sense.
+    # Rename this function for readability. Calling float(self) to get
+    # the current inning is pretty opaque - self.inning_as_float makes
+    # a bit more sense.
     @property
     def inning_as_float(self):
         return self.__float__()
@@ -63,3 +63,5 @@ class InningsPlayed(Inning):
                 if playerID: # index 0 (designated hitter) will be empty for NL. Also all will be empty before the first game
                     data.inn_played[playerID] = self.inning_as_float - data.when_entered[playerID]
                     
+    def get_all_innings_played(self):
+        return {**self.home.inn_played, **self.away.inn_played}
