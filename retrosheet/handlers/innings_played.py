@@ -60,6 +60,6 @@ class InningsPlayed(Inning):
         """ New game """
         for data in (self.home, self.away):
             for playerID in data.playerIDs:
-                if playerID: # index 0 (designated hitter) will be empty for NL 
+                if playerID: # index 0 (designated hitter) will be empty for NL. Also all will be empty before the first game
                     data.inn_played[playerID] = self.inning_as_float - data.when_entered[playerID]
                     
