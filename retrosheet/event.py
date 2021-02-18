@@ -25,6 +25,11 @@ class Start(EventLine):
         self.battingorder = battingorder
         self.position = position
 
+    def __str__(self):
+        return ','.join([
+            self.playerID, self.playerName, self.homeaway, self.battingorder, self.position,
+        ])
+
 class Sub(EventLine):
     def __init__(self, playerID, playername, homeaway, battingorder, position):
         self.playerID = playerID
