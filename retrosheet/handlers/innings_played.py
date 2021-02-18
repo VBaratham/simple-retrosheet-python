@@ -18,7 +18,7 @@ class InningsPlayedStruct(object):
         self.when_entered = [0] * 10
 
         # when a player leaves the game or the game ends, their # innings played is stored here
-        self.innings_played = {}
+        self.inn_played = {}
         
 
 class InningsPlayed(Inning):
@@ -27,6 +27,13 @@ class InningsPlayed(Inning):
         
         self.home = InningsPlayedStruct()
         self.away = InningsPlayedStruct()
+
+    # Rename this function for readability in this subclass of Inning
+    # calling float(self) to get the current inning is pretty opaque
+    # self.inning_as_float makes a bit more sense.
+    @property
+    def inning_as_float(self):
+        return self.__float__()
 
     def handle_start(self, start):
         self.playerIDs_home[start.battingorder] = start.playerID
@@ -42,7 +49,7 @@ class InningsPlayed(Inning):
         # Find the outgoing player based on batting order
         outgoing = data.playerIDs[sub.battingorder]
         # and count his innings played
-        data.innings_played[outgoing] = self.inning_as_float() - data.when_entered[outgoing]
+        data.inn_played[outgoing] = self.inning_as_float() - data.when_entered[outgoing]
 
         # Put the incoming player into the list of active players
         data.playerIDs[sub.battingorder] = sub.playerID
@@ -54,6 +61,5 @@ class InningsPlayed(Inning):
         for data in (self.home, self.away):
             for playerID in data.playerIDs:
                 if playerID: # index 0 (designated hitter) will be empty for NL 
-                    pass
-
-    # Need to think about how to wrap up a game without resetting the structs, then reset them before the next game starts 
+                    data.inn_played[playerID] = self.inning_as_float - data.when_entered[playerID]
+                    

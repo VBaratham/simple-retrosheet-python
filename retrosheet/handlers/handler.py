@@ -37,3 +37,14 @@ class Handler(object):
         """ Pass the line off to the appropriate handling function """
         typ = type(pyline)
         return self.fcn_for[typ](pyline)
+
+    def reset(self):
+        """
+        Resets the handler. Usually this means re-initializing all member
+        data structures. Most handlers can do this by simply rerunning
+        their constructor.
+
+        This function mnust be called by the Analysis object after firing
+        triggers for each game
+        """
+        self.__init__()

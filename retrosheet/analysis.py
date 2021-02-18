@@ -86,7 +86,9 @@ class Analysis(object):
     #         self.triggers[trigger_name]()
 
     def fire_trigger(self, trigger_name):
-        self.triggers[trigger_name]()
+        # A trigger is a function that receives the dictionary of
+        # handlers and does something with their data
+        self.triggers[trigger_name](self.handlers)
 
     def preprocess(self):
         pass
@@ -105,9 +107,11 @@ class Analysis(object):
             #     new_trigger = handler.handle(pyline)
             #     if new_trigger:
             #         triggers_to_fire.append(new_trigger)
-            # self.fire_triggers(trigger_to_fire)
+            # self.fire_triggers(triggers_to_fire)
 
-            # Fire triggers as soon as they're triggered:
+            # Fire triggers as soon as they're triggered. Users will
+            # have to be careful to add triggering handlers in the
+            # correct order:
             for handler in self.handlers.values():
                 trigger_name = handler.handle(pyline)
                 if trigger_name:
