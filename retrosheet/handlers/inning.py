@@ -1,6 +1,6 @@
 from .handler import Handler
 """
-Handler which keeps track of the current inning
+Handler to keep track of the current inning
 """
 
 class Inning(Handler):
@@ -20,10 +20,6 @@ class Inning(Handler):
         # outs correctly
         if nouts > 0:
             self.inning += (0 if self.outs else 1) # if outs wrapped back to 0, self.inning++
-
-    @property
-    def inning_as_float(self):
-        return self.__float__()
 
     def __float__(self):
         return self.inning + (float(self.outs) / 3.0)

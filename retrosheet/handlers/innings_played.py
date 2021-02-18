@@ -2,7 +2,7 @@ from .inning import Inning
 from retrosheet import HOME, AWAY
 
 """
-Handler which counts the number of innings each player played
+Handler to count the number of innings each player played
 """
 
 class InningsPlayedStruct(object):
