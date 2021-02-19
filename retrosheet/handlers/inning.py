@@ -35,14 +35,25 @@ class Inning(Handler):
         return self.inning + (float(self.tot_outs) / 3.0)
 
     def handle_play(self, play):
+
+        if play.event.startswith('K+'):
+            # Strikeout + other event
+            first_play, event = play.event.split('+')
+            if "B-" not in play.event:
+                self.tot_outs += 1
+        elif play.event.startswith('W+'):
+            first_play, event = play.event.split('+')
+        else:
+            event = play.event
+            
         if (self.inning != play.inning) or (self.at_bat != play.homeaway):
             raise Exception("Lost track of # outs or inning. We think the inning is: {} with {} out, at bat = {}. Current play (not processed yet): {}".format(self.inning, self.out, self.at_bat, play))
 
         # TODO: replace this all w/ a regex
 
         # FLYOUT OR GROUNDOUT
-        if play.event[0].isdigit():
-            basic_play = play.event.split('/')[0]
+        if event[0].isdigit():
+            basic_play = event.split('/')[0]
             if tripleplay_regex.match(basic_play):
                 self.tot_outs += 3
             elif doubleplay_regex.match(basic_play):
@@ -51,22 +62,29 @@ class Inning(Handler):
                 self.tot_outs += 1
                 
 
+        # I think the best way to do this would be to split the play
+        # on '+' and parse each separately (recursively?) (split the
+        # entire play, not just the basic play before '/', because the
+        # stuff after '/' applies only to the 2nd event)
+        
 
         # STRIKEOUT
-        elif play.event[0] == 'K':
-            if "B-" not in play.event: # Batter reached (i.e. passed ball)
+        elif event[0] == 'K':
+            if "B-" not in play.event and "BX" not in event:
+                # "B-" is Batter reached (i.e. passed ball)
+                # "BX" is Batter out advancing, which is counted below
                 self.tot_outs += 1
 
         # CAUGHT STEALING
-        elif play.event.startswith('CS'):
+        elif event.startswith('CS'):
             # A runner is caught stealing iff there was no error on the pickoff attempt
-            if play.event.find('E') == -1:
+            if event.find('E') == -1:
                 self.tot_outs += 1
 
         # PICKOFF
-            # A runner is picked off iff there was no error on the pickoff attempt
-        elif play.event.startswith('PO'):
-            if play.event.find('E') == -1:
+        # A runner is picked off iff there was no error on the pickoff attempt
+        elif event.startswith('PO'):
+            if event.find('E') == -1:
                 self.tot_outs += 1
                 
         # FC for fielder's choice would be accompanied by X if an out was made
@@ -75,8 +93,8 @@ class Inning(Handler):
         # Record an out for each runner caught advancing, indicated by
         # X in the "advance" part of the event string, which starts
         # after "."
-        if '.' in play.event:
-            self.tot_outs += play.event.split('.')[-1].count('X')
+        if '.' in event:
+            self.tot_outs += event.split('.')[-1].count('X')
 
         print("Inning {}, {} out, at bat = {}".format(self.inning, self.out, self.at_bat))
 

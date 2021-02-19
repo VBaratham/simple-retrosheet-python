@@ -77,6 +77,16 @@ class Com(EventLine):
     def __init__(self, comment):
         self.comment = comment
 
+class Badj(EventLine):
+    def __init__(self, playerID, hand):
+        self.playerID = playerID
+        self.hand = hand
+
+class Radj(EventLine):
+    def __init__(self, playerID, base):
+        self.playerID = playerID
+        self.base = base
+
     
 class_for = {
     'id': ID,
@@ -87,6 +97,8 @@ class_for = {
     'info': Info,
     'data': Data,
     'com': Com,
+    'badj': Badj,
+    'radj': Radj,
 }
     
 def pythonify_line(line):

@@ -15,6 +15,8 @@ class Handler(object):
             event.Info: self.handle_info,
             event.Data: self.handle_data,
             event.Com: self.handle_com,
+            event.Badj: self.handle_badj,
+            event.Radj: self.handle_radj,
         }
 
     def handle_id(self, _id):
@@ -39,6 +41,12 @@ class Handler(object):
         pass
 
     def handle_com(self, com):
+        pass
+    
+    def handle_badj(self, badj):
+        pass
+
+    def handle_radj(self, radj):
         pass
 
     def handle(self, pyline):
