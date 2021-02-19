@@ -11,8 +11,13 @@ with open('playerIDs.csv', 'r') as infile:
             i += 1
 print("Done.")
 
-def playerIDs_to_idx(playerIDs):
+def to_row(inn_played):
     """
-    Compute index (array positions) for the given list of playerIDs
+    Given a playerID to innings played dict, return a row of the X matrix
     """
-    
+    row = np.zeros(shape=len(playerID_to_idx))
+    for playerID, ip in inn_played.items():
+        row[playerID_to_idx[playerID]] = ip
+    return row
+
+

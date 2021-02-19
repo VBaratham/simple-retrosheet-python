@@ -1,5 +1,5 @@
-from .inning import Inning
 from retrosheet import HOME, AWAY
+from .inning import Inning
 
 """
 Handler to count the number of innings each player played

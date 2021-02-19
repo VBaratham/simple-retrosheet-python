@@ -1,13 +1,24 @@
 """
 Perform a linear regression to predict wins as a function of innings played by each player.
 """
+import sys
 from argparse import ArgumentParser
 
-from retrosheet import Analysis
-from retrosheet.handlers import InningsPlayed, Winner, GameTrigger
+import h5py
+import scipy.sparse
+from sklearn import linear_model
 
-H5_FILENAME = "data.h5"
+from retrosheet import Analysis, HOME, AWAY, utils
+from retrosheet.handlers import InningsPlayed, Winner, GameTrigger, ActivePlayers
+
+H5_FILENAME = "winlose.h5"
+H5_KEY = 'y'
 NPZ_FILENAME = "inn_played.npz"
+RESULTS_FILENAME = "reg.pkl"
+
+def load_y(data_dir):
+    with h5py.File(os.path.join(data_dir, H5_FILENAME), 'r') as infile:
+        y = infile[H5_KEY][:]
 
 def check_outdir(outfile):
     """
@@ -20,8 +31,16 @@ def check_outdir(outfile):
                         " --create-dataset is passed. Pass --force to continue anyways")
         
 
-def create_dataset(data_dir, year_from, year_to):
+def create_dataset(data_dir, ngames):
+
+    # Main analysis object
     analysis = Analysis()
+
+    # Register a handler that keeps track of all players who play in
+    # the sample of games we analyze. This is only used to trim the array
+    # at the very end
+    actives = ActivePlayers()
+    analysis.register_handler('all_players', actives)
 
     # Register a handler that keeps track of the # of innings played by each player
     analysis.register_handler('inn_played', InningsPlayed())
@@ -32,27 +51,43 @@ def create_dataset(data_dir, year_from, year_to):
     # Register a handler that fires a trigger called 'endofgame' at the end of each game
     analysis.register_handler('trigger', GameTrigger('endofgame'))
 
-    # Define the function that will get called when this trigger fires
-    # Here, we store the winning team and a dict mapping playerID to
-    # number of innings played for the home and away teams. This
-    # function will be passed the dictionary of handlers that we just
-    # registered:
-
-    ngames = 100 # TODO
+    # Define data structures where we will store analysis results
     nplayers = len(utils.playerID_to_idx)
+    y = np.zeros(shape=2*ngames)
+    x = scipy.sparse.csr_matrix((2*ngames, nplayers))
+
+    game_i = 0 # counter of how many games we've processed
+    # Index game_i * 2 + AWAY represents the away team of game game_i (AWAY = 0)
+    # Index game_i * 2 + HOME represents the home team of game game_i (HOME = 1)
     
-    wins_arr = np.array()
-    inn_played_arr = csr_matrix((ngames, nplayers))
-    
+    # Define the function that will get called when this trigger fires.
+    # This function will be passed the dictionary of handlers that we
+    # just registered. In it, we populate the x and y arrays one game
+    # at a time.
+
     def endofgame(handlers):
+        # Grab the # of innings played by each player on the home and away teams
         inn_played_home = handlers['inn_played'].home.inn_played
         inn_played_away = handlers['inn_played'].away.inn_played
-        # TODO: Convert each playerID to an integer code and place in sparse array
 
+        away_i = game_i * 2 + AWAY
+        home_i = game_i * 2 + HOME
+
+        # Place this game's data in sparse array
+        x[away_i, :] = utils.to_row(inn_played_away)
+        x[home_i, :] = utils.to_row(inn_played_home)
+
+        # TODO future: construct in standard CSR representation
+        # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
+
+        # Determine who won and put +1 or -1 into the y vector
         winning_homeaway, winning_team = handlers['winner'].get_winning_team()
-        # Create an array that's +1 or -1 for each player in the game based on
-        # whether they won or lost
-
+        if winning_homeaway == AWAY:
+            y[away_i] = +1
+            y[home_i] = -1
+        else:
+            y[away_i] = -1
+            y[home_i] = +1
 
         # Finally, reset all handlers for the next game
         for handler in handlers.values():
@@ -61,19 +96,42 @@ def create_dataset(data_dir, year_from, year_to):
     # Run the analysis we just set up to contruct these arrays
     analysis.run()
 
+    # Trim columns of X representing players who didn't play
+    # in the sample of games we analyzed, and convert to coo
+    # sparse matrix format. We use coo because this page shows
+    # coo is faster than dense matrix in lasso regression:
+    # https://scikit-learn.org/stable/auto_examples/linear_model/plot_lasso_dense_vs_sparse_data.html
+    activeIDs = np.array([utils.playerID_to_idx[playerID] for playerID in actives.playerIDs])
+    x = x.tocsc()[:, sorted(activeIDs)].tocoo()
+
     # TODO: Save the arrays to disk
+    scipy.sparse.save_npz(os.path.join(data_dir, NPZ_FILENAME), x)
+    with h5py.File(os.path.join(data_dir, H5_FILENAME), 'w') as outfile:
+        outfile.create_dataset(H5_KEY, data=y)
 
+    return x, y
     
-def regression(data_dir):
-    pass
+def regression(data_dir=None, x=None, y=None):
+    # Load data if not passed in
+    if x is None:
+        x = scipy.sparse.load_npz(os.path.join(data_dir, NPZ_FILENAME))
+    if y is None:
+        y = load_y(data_dir)
 
+    # Perform linear regression
+    reg = linear_model.LinearRegression(x, y)
+
+    # Save regression results to disk
+    with open(RESULTS_FILENAME, 'w') as outfile:
+        pickle.dump(reg, outfile)
+        
 
 if __name__ == '__main__':
     parser = ArgumentParser(description="Linearly regress wins on innings played using the MLB retrosheet")
-    parser.add_arugment("--year-from", "--start-year", type=int, required=False, default=2020,
-                        help="First year to analyze")
-    parser.add_arugment("--year-to", "--end-year", type=int, required=False, default=2020,
-                        help="Last year to analyze")
+    # parser.add_arugment("--year-from", "--start-year", type=int, required=False, default=2020,
+    #                     help="First year to analyze")
+    # parser.add_arugment("--year-to", "--end-year", type=int, required=False, default=2020,
+    #                     help="Last year to analyze")
     parser.add_argument("--data-dir", type=str, required=False, default='./regressionWARdata',
                         help="directory where data should be stored (if --create-dataset is" + \
                         " passed) and/or read from (if --regression is passed)")
@@ -83,12 +141,15 @@ if __name__ == '__main__':
                         help="Perform the regression")
     parser.add_argument("--overwrite", type=bool, action="store_true", default=False,
                         help="Overwrite the data directory if not empty")
+    parser.add_argument("--ngames", type=int, required=True,
+                        help="How many games to analyze. Ignore all games after this.")
 
     args = parser.parse_args()
 
+    x, y = None, None
     if args.create_dataset:
         check_outdir(args.data_dir)
-        create_dataset(args.data_dir, args.year_from, args.year_to)
+        x, y = create_dataset(args.data_dir, args.ngames)
 
     if args.regression:
-        regression(args.data_dir)
+        regression(data_dir=args.data_dir, x=x, y=y)
