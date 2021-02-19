@@ -72,6 +72,7 @@ def create_dataset(event_file, data_dir, ngames):
 
     def endofgame(handlers):
         print("In endofgame()")
+        nonlocal game_i
         # Grab the # of innings played by each player on the home and away teams
         inn_played_home = handlers['inn_played'].home.inn_played
         inn_played_away = handlers['inn_played'].away.inn_played
@@ -98,6 +99,13 @@ def create_dataset(event_file, data_dir, ngames):
         # Finally, reset all handlers for the next game
         for handler in handlers.values():
             handler.reset()
+
+        game_i += 1
+
+        print("Processed game {} of {}".format(game_i, ngames))
+
+    # Register this trigger to the analysis:
+    analysis.register_trigger('endofgame', endofgame)
 
     # Run the analysis we just set up to contruct these arrays
     analysis.run()

@@ -69,6 +69,10 @@ class Info(EventLine):
         self.fieldname = fieldname
         self.data = data
 
+class Data(EventLine):
+    def __init__(self, *data):
+        self.data = data
+
 class Com(EventLine):
     def __init__(self, comment):
         self.comment = comment
@@ -76,12 +80,13 @@ class Com(EventLine):
     
 class_for = {
     'id': ID,
+    'version': Version,
     'start': Start,
     'sub': Sub,
     'play': Play,
     'info': Info,
+    'data': Data,
     'com': Com,
-    'version': Version,
 }
     
 def pythonify_line(line):

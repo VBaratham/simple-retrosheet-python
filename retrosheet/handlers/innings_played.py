@@ -48,19 +48,19 @@ class InningsPlayed(Inning):
         # Find the outgoing player based on batting order
         outgoing = data.playerIDs[sub.battingorder]
         # and count his innings played
-        data.inn_played[outgoing] = self.inning_as_float() - data.when_entered[outgoing]
+        data.inn_played[outgoing] = self.inning_as_float() - data.when_entered[sub.battingorder]
 
         # Put the incoming player into the list of active players
         data.playerIDs[sub.battingorder] = sub.playerID
         # and record when he entered
-        data.when_entered[sub.playerID] = self.inning_as_float()
+        data.when_entered[sub.battingorder] = self.inning_as_float()
         
     def handle_id(self, _id):
         """ New game """
         for data in (self.home, self.away):
-            for playerID in data.playerIDs:
+            for battingorder, playerID in enumerate(data.playerIDs):
                 if playerID: # index 0 (designated hitter) will be empty for NL. Also all will be empty before the first game
-                    data.inn_played[playerID] = self.inning_as_float() - data.when_entered[playerID]
+                    data.inn_played[playerID] = self.inning_as_float() - data.when_entered[battingorder]
                     
     def get_all_innings_played(self):
         return {**self.home.inn_played, **self.away.inn_played}

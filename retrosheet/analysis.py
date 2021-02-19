@@ -34,6 +34,7 @@ class Analysis(object):
             self.filenames = ['-'] # FileInput treats this as stdin
 
         self.handlers = OrderedDict()
+        self.triggers = OrderedDict()
 
     def _retrosheet_as_filelike(self):
         """ Return the entire retrosheet as a single (lazily-loaded) file-like """

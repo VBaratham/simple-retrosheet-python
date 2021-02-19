@@ -24,3 +24,6 @@ class GameTrigger(Handler):
             return self.trigger_name
         else:
             self.seen_one = True
+
+    def reset(self):
+        pass

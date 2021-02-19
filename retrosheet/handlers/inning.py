@@ -14,25 +14,29 @@ tripleplay_regex = re.compile("XXXXXXXXXX")
 
 class Inning(Handler):
     def __init__(self):
-        self.outs = 0
+        self.tot_outs = 0
 
     def handle_id(self):
-        self.outs = 0
+        self.tot_outs = 0
 
     @property
     def inning(self):
-        return (self.outs // 6) + 1
+        return (self.tot_outs // 6) + 1
+
+    @property
+    def out(self):
+        return (self.tot_outs % 3)
 
     @property
     def at_bat(self):
-        return (self.outs % 6) // 3
+        return (self.tot_outs % 6) // 3
 
     def __float__(self):
-        return self.inning + (float(self.outs) / 3.0)
+        return self.inning + (float(self.tot_outs) / 3.0)
 
     def handle_play(self, play):
         if self.inning != play.inning:
-            raise Exception("Lost track of # outs or inning. We think the inning is: {} with {} out. Current play (not processed yet): {}".format(self.inning, self.outs, play))
+            raise Exception("Lost track of # outs or inning. We think the inning is: {} with {} out. Current play (not processed yet): {}".format(self.inning, self.out, play))
 
         # TODO: replace this all w/ a regex
 
@@ -40,33 +44,34 @@ class Inning(Handler):
         if play.event[0].isdigit():
             basic_play = play.event.split('/')[0]
             if tripleplay_regex.match(basic_play):
-                self.outs += 3
+                self.tot_outs += 3
             elif doubleplay_regex.match(basic_play):
-                self.outs += 2
+                self.tot_outs += 2
             else:
-                self.outs += 1
+                self.tot_outs += 1
                 
 
 
         # STRIKEOUT
         elif play.event[0] == 'K':
-            self.outs += 1
+            if "B-" not in play.event: # Batter reached (i.e. passed ball)
+                self.tot_outs += 1
 
         # CAUGHT STEALING
         elif play.event.startswith('CS'):
-            self.outs += 1
+            self.tot_outs += 1
 
         # PICKOFF
         elif play.event.startswith('PO'):
             # A runner is picked off iff there was no error on the pickoff attempt
             if play.event.find('E') == -1:
-                self.outs += 1
+                self.tot_outs += 1
                 
         # FC for fielder's choice would be accompanied by X if an out was made
         # We take care of those below
     
         # Record an out for each runner caught advancing, indicated by X
-        self.outs += play.event.count('X')
+        self.tot_outs += play.event.count('X')
 
-        print(self.inning, self.outs)
+        print("Inning {}, {} out".format(self.inning, self.out))
 

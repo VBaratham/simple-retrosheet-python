@@ -46,4 +46,4 @@ class Winner(Handler):
             return HOME, self.hometeam
         else:
             assert self.wp in self.pitcherIDs[AWAY], "Winning pitcher has to be on the other team"
-            return AWAY, self.awayteam
+            return AWAY, self.visteam
