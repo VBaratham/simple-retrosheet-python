@@ -31,12 +31,11 @@ class InningsPlayed(Inning):
     # Rename this function for readability. Calling float(self) to get
     # the current inning is pretty opaque - self.inning_as_float makes
     # a bit more sense.
-    @property
     def inning_as_float(self):
         return self.__float__()
 
     def handle_start(self, start):
-        self.playerIDs_home[start.battingorder] = start.playerID
+        self.home.playerIDs[start.battingorder] = start.playerID
 
     def handle_sub(self, sub):
         if sub.homeaway == AWAY:
@@ -61,7 +60,7 @@ class InningsPlayed(Inning):
         for data in (self.home, self.away):
             for playerID in data.playerIDs:
                 if playerID: # index 0 (designated hitter) will be empty for NL. Also all will be empty before the first game
-                    data.inn_played[playerID] = self.inning_as_float - data.when_entered[playerID]
+                    data.inn_played[playerID] = self.inning_as_float() - data.when_entered[playerID]
                     
     def get_all_innings_played(self):
         return {**self.home.inn_played, **self.away.inn_played}

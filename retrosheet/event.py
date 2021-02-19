@@ -12,18 +12,24 @@ class EventLine(object):
     """
     pass
 
+# TODO: This should all be specifiable as a json or
+# something... object types for each arg... etc.
+
 class ID(EventLine):
-    def __init__(self, ID, gameID):
-        self.ID = ID
+    def __init__(self, gameID):
         self.gameID = gameID
+
+class Version(EventLine):
+    def __init__(self, version):
+        self.version = version
 
 class Start(EventLine):
     def __init__(self, playerID, playername, homeaway, battingorder, position):
         self.playerID = playerID
         self.playername = playername
-        self.homeaway = homeaway
-        self.battingorder = battingorder
-        self.position = position
+        self.homeaway = int(homeaway)
+        self.battingorder = int(battingorder)
+        self.position = int(position)
 
     def __str__(self):
         return ','.join([
@@ -34,9 +40,9 @@ class Sub(EventLine):
     def __init__(self, playerID, playername, homeaway, battingorder, position):
         self.playerID = playerID
         self.playername = playername
-        self.homeaway = homeaway
-        self.battingorder = battingorder
-        self.position = position
+        self.homeaway = int(homeaway)
+        self.battingorder = int(battingorder)
+        self.position = int(position)
 
     def __str__(self):
         return ','.join([
@@ -46,16 +52,16 @@ class Sub(EventLine):
 class Play(EventLine):
     # TODO: Create a separate parser for the "play" subfield
     def __init__(self, inning, homeaway, playerID, count, pitches, event):
-        self.inning = inning
-        self.homeaway = homeaway
+        self.inning = int(inning)
+        self.homeaway = int(homeaway)
         self.playerID = playerID
         self.count = count
         self.pitches = pitches
         self.event = event
 
     def __str__(self):
-        return ','.join([
-            self.inning, self.homeaway, self.playerID, self.count, self.pitches, self.play,
+        return ','.join(str(x) for x in [
+            self.inning, self.homeaway, self.playerID, self.count, self.pitches, self.event
         ])
     
 class Info(EventLine):
@@ -75,6 +81,7 @@ class_for = {
     'play': Play,
     'info': Info,
     'com': Com,
+    'version': Version,
 }
     
 def pythonify_line(line):
@@ -83,7 +90,7 @@ def pythonify_line(line):
     @param line - array where each element is one field from one line of the event file.
                   The first element should be the field name.
     """
-    cls = class_for(line[0])
-    return cls.from_arr(*line[1:])
+    cls = class_for[line[0]]
+    return cls(*line[1:])
 
 

@@ -39,7 +39,7 @@ def check_outdir(outdir, overwrite):
 def create_dataset(event_file, data_dir, ngames):
 
     # Main analysis object
-    analysis = Analysis()
+    analysis = Analysis(filename=event_file)
 
     # Register a handler that keeps track of all players who play in
     # the sample of games we analyze. This is only used to trim the array
@@ -71,6 +71,7 @@ def create_dataset(event_file, data_dir, ngames):
     # at a time.
 
     def endofgame(handlers):
+        print("In endofgame()")
         # Grab the # of innings played by each player on the home and away teams
         inn_played_home = handlers['inn_played'].home.inn_played
         inn_played_away = handlers['inn_played'].away.inn_played

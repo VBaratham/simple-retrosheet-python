@@ -7,6 +7,7 @@ import sys
 import csv
 import itertools
 from collections import OrderedDict
+from fileinput import FileInput
 
 from retrosheet.event import pythonify_line
 
@@ -27,29 +28,22 @@ class Analysis(object):
         
         if filenames:
             self.filenames = filenames
-        elif filenames:
+        elif filename:
             self.filenames = [filename]
         else:
-            self.filenames = None
+            self.filenames = ['-'] # FileInput treats this as stdin
 
         self.handlers = OrderedDict()
 
     def _retrosheet_as_filelike(self):
         """ Return the entire retrosheet as a single (lazily-loaded) file-like """
-        def _yield_files():
-            if self.filenames is not None:
-                for fn in self.filenames:
-                    with open(fn) as infile:
-                        yield infile
-            else:
-                yield sys.stdin
-
-        return itertools.chain(_yield_files())
+        return FileInput(files=self.filenames)
             
     def _get_python_stream(self):
         """ Yield all lines in the retrosheet as Python objects """
         reader = csv.reader(self._retrosheet_as_filelike())
         for line in reader:
+            print(line)
             yield pythonify_line(line)
             
     # def _get_raw_stream(self):

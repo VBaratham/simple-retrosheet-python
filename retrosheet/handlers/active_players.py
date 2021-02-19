@@ -6,7 +6,7 @@ one game in the sample we analyze
 
 class ActivePlayers(Handler):
     def __init__(self):
-        playerIDs = set()
+        self.playerIDs = set()
 
     def handle_start(self, start):
         self.playerIDs.add(start.playerID)

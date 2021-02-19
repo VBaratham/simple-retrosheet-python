@@ -17,7 +17,7 @@ class Winner(Handler):
 
     def handle_start(self, start):
         if start.position == 1:
-            self.pitcherIDs[start.homeaway].append(start.playerID)
+            self.pitcherIDs[start.homeaway].add(start.playerID)
 
     def handle_sub(self, sub):
         self.handle_start(sub)

@@ -13,9 +13,13 @@ class Handler(object):
             event.Play: self.handle_play,
             event.Info: self.handle_info,
             event.Com: self.handle_com,
+            event.Version: self.handle_version,
         }
 
     def handle_id(self, _id):
+        pass
+
+    def handle_version(self, version):
         pass
 
     def handle_start(self, start):
