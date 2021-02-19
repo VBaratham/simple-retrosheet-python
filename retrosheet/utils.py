@@ -7,7 +7,7 @@ with open('playerIDs.csv', 'r') as infile:
     i = 0
     for person in reader:
         if person['Play debut']:
-            playerID_to_idx[person[ID]] = i
+            playerID_to_idx[person['ID']] = i
             i += 1
 print("Done.")
 

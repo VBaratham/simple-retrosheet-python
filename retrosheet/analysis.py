@@ -4,6 +4,8 @@ hands the data off to each of the handlers registered to it, and
 produces the final output
 """
 import sys
+import csv
+import itertools
 from collections import OrderedDict
 
 from retrosheet.event import pythonify_line
@@ -31,11 +33,10 @@ class Analysis(object):
             self.filenames = None
 
         self.handlers = OrderedDict()
-        self.stream = io.StringIO()
 
     def _retrosheet_as_filelike(self):
         """ Return the entire retrosheet as a single (lazily-loaded) file-like """
-        def _yield_files(self):
+        def _yield_files():
             if self.filenames is not None:
                 for fn in self.filenames:
                     with open(fn) as infile:
@@ -43,7 +44,7 @@ class Analysis(object):
             else:
                 yield sys.stdin
 
-        return itertools.chain(self._yield_files())
+        return itertools.chain(_yield_files())
             
     def _get_python_stream(self):
         """ Yield all lines in the retrosheet as Python objects """

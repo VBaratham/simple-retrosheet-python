@@ -1,9 +1,11 @@
 """
 Perform a linear regression to predict wins as a function of innings played by each player.
 """
-import sys
+import os, sys
+import shutil
 from argparse import ArgumentParser
 
+import numpy as np
 import h5py
 import scipy.sparse
 from sklearn import linear_model
@@ -20,18 +22,21 @@ def load_y(data_dir):
     with h5py.File(os.path.join(data_dir, H5_FILENAME), 'r') as infile:
         y = infile[H5_KEY][:]
 
-def check_outdir(outfile):
+def check_outdir(outdir, overwrite):
     """
     Create outdir if it doesn't exist, and make sure it's empty if it does.
     """
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     elif len(os.listdir(outdir)) > 0:
-        raise Exception("--data-dir must point to an empty directory if" + \
-                        " --create-dataset is passed. Pass --force to continue anyways")
+        if overwrite:
+            shutil.rmtree(outdir)
+        else:
+            raise Exception("--data-dir must point to an empty directory if" + \
+                            " --create-dataset is passed. Pass --overwrite to continue anyways")
         
 
-def create_dataset(data_dir, ngames):
+def create_dataset(event_file, data_dir, ngames):
 
     # Main analysis object
     analysis = Analysis()
@@ -104,7 +109,7 @@ def create_dataset(data_dir, ngames):
     activeIDs = np.array([utils.playerID_to_idx[playerID] for playerID in actives.playerIDs])
     x = x.tocsc()[:, sorted(activeIDs)].tocoo()
 
-    # TODO: Save the arrays to disk
+    # Save the arrays to disk
     scipy.sparse.save_npz(os.path.join(data_dir, NPZ_FILENAME), x)
     with h5py.File(os.path.join(data_dir, H5_FILENAME), 'w') as outfile:
         outfile.create_dataset(H5_KEY, data=y)
@@ -132,24 +137,29 @@ if __name__ == '__main__':
     #                     help="First year to analyze")
     # parser.add_arugment("--year-to", "--end-year", type=int, required=False, default=2020,
     #                     help="Last year to analyze")
+    parser.add_argument("--event-file", type=str, required=False, default="2020BOS.EVA",
+                        help="Event file from MLB retrosheet. Required if not using stdin")
     parser.add_argument("--data-dir", type=str, required=False, default='./regressionWARdata',
                         help="directory where data should be stored (if --create-dataset is" + \
                         " passed) and/or read from (if --regression is passed)")
-    parser.add_argument("--create-dataset", type=bool, action='store_true', default=False,
+    parser.add_argument("--create-dataset", action='store_true', default=False,
                         help="Parse the MLB retrosheet to create the dataset for regression")
-    parser.add_argument("--regression", type=bool, action='store_true', default=False,
+    parser.add_argument("--regression", action='store_true', default=False,
                         help="Perform the regression")
-    parser.add_argument("--overwrite", type=bool, action="store_true", default=False,
+    parser.add_argument("--overwrite", action="store_true", default=False,
                         help="Overwrite the data directory if not empty")
     parser.add_argument("--ngames", type=int, required=True,
                         help="How many games to analyze. Ignore all games after this.")
 
     args = parser.parse_args()
 
+    if not args.create_dataset and not args.regression:
+        raise Exception("Must pass either --create-dataset or --regression")
+
     x, y = None, None
     if args.create_dataset:
-        check_outdir(args.data_dir)
-        x, y = create_dataset(args.data_dir, args.ngames)
+        check_outdir(args.data_dir, args.overwrite)
+        x, y = create_dataset(args.event_file, args.data_dir, args.ngames)
 
     if args.regression:
         regression(data_dir=args.data_dir, x=x, y=y)
