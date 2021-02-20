@@ -6,6 +6,7 @@ produces the final output
 import sys
 import csv
 import itertools
+import logging as log
 from collections import OrderedDict
 from fileinput import FileInput
 
@@ -51,7 +52,7 @@ class Analysis(object):
         """ Yield all lines in the retrosheet as Python objects """
         reader = csv.reader(self._retrosheet_as_filelike())
         for line in reader:
-            print(line)
+            log.debug(line)
             yield pythonify_line(line)
             
     # def _get_raw_stream(self):

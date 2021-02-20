@@ -1,9 +1,10 @@
 import csv
+import logging as log
 
 import numpy as np
 
 playerID_to_idx = {}
-print("Loading playerIDs.csv...")
+log.info("Loading playerIDs.csv...")
 with open('playerIDs.csv', 'r') as infile:
     reader = csv.DictReader(infile)
     i = 0
@@ -11,7 +12,7 @@ with open('playerIDs.csv', 'r') as infile:
         if person['Play debut']:
             playerID_to_idx[person['ID']] = i
             i += 1
-print("Done.")
+log.info("Done.")
 
 def to_row(inn_played):
     """

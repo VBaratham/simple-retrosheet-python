@@ -1,4 +1,5 @@
 import re
+import logging as log
 
 from retrosheet import HOME, AWAY
 from .handler import Handler
@@ -100,8 +101,8 @@ class Inning(Handler):
         if '.' in event:
             advances = event.split('.')[-1]
             out_advancing = len(caughtadvancing_noerror_regex.findall(advances))
-            print(out_advancing)
+            log.debug(out_advancing)
             self.tot_outs += out_advancing
 
-        print("Inning {}, {} out, at bat = {}".format(self.inning, self.out, self.at_bat))
+        log.debug("Inning {}, {} out, at bat = {}".format(self.inning, self.out, self.at_bat))
 

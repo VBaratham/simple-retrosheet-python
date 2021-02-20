@@ -4,6 +4,9 @@ Perform a linear regression to predict wins as a function of innings played by e
 import os, sys
 import pickle
 import shutil
+import logging as log
+
+
 from argparse import ArgumentParser
 
 import joblib
@@ -76,7 +79,7 @@ def create_dataset(event_file, data_dir, ngames):
     # at a time.
 
     def endofgame(handlers):
-        print("In endofgame()")
+        log.debug("In endofgame()")
         nonlocal game_i
         # Grab the # of innings played by each player on the home and away teams
         inn_played_home = handlers['inn_played'].home.inn_played
@@ -109,13 +112,17 @@ def create_dataset(event_file, data_dir, ngames):
         if game_i >= ngames:
             raise StopAnalysis()
 
-        print("Processed game {} of {}".format(game_i, ngames))
+        log.info("Processed game {} of {}".format(game_i, ngames))
 
     # Register this trigger to the analysis:
     analysis.register_trigger('endofgame', endofgame)
 
     # Run the analysis we just set up to contruct these arrays
     analysis.run()
+
+    # The final game does not end with 'id' record, so we need to manually
+    # fire the trigger to process it:
+    # analysis.fire_trigger('endofgame')
 
     # Trim columns of X representing players who didn't play
     # in the sample of games we analyzed, and convert to coo
@@ -148,6 +155,10 @@ def regression(data_dir=None, x=None, y=None, activeIDs=None):
     # Save regression results to disk
     joblib.dump(reg, RESULTS_FILENAME)
 
+    log.info("Done.")
+
+    import ipdb; ipdb.set_trace()
+
 if __name__ == '__main__':
     parser = ArgumentParser(description="Linearly regress wins on innings played using the MLB retrosheet")
     # parser.add_arugment("--year-from", "--start-year", type=int, required=False, default=2020,
@@ -167,8 +178,15 @@ if __name__ == '__main__':
                         help="Overwrite the data directory if not empty")
     parser.add_argument("--ngames", type=int, required=True,
                         help="How many games to analyze. Ignore all games after this.")
+    parser.add_argument("--log", type=str, choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+                        required=False, default='warning',
+                        help='set the level of log messages to see')
+    # parser.add_argument("--logfile", type=str, required=False, default=None,
+    #                     help="output the log to a file")
 
     args = parser.parse_args()
+
+    log.getLogger().setLevel(getattr(log, args.log.upper()))
 
     if not args.create_dataset and not args.regression:
         raise Exception("Must pass either --create-dataset or --regression")
