@@ -1,6 +1,7 @@
 """
 Simple structs for Pythonifying the Event file from the MLB retrosheet
 """
+import logging as log
 
 __author__ = "Vyassa Baratham"
 
@@ -32,8 +33,8 @@ class Start(EventLine):
         self.position = int(position)
 
     def __str__(self):
-        return ','.join([
-            self.playerID, self.playerName, self.homeaway, self.battingorder, self.position,
+        return ','.join(str(s) for s in [
+            self.playerID, self.playername, self.homeaway, self.battingorder, self.position,
         ])
 
 class Sub(EventLine):
@@ -45,8 +46,8 @@ class Sub(EventLine):
         self.position = int(position)
 
     def __str__(self):
-        return ','.join([
-            self.playerID, self.playerName, self.homeaway, self.battingorder, self.position,
+        return ','.join(str(s) for s in [
+            self.playerID, self.playername, self.homeaway, self.battingorder, self.position,
         ])
 
 class Play(EventLine):
@@ -77,6 +78,13 @@ class Com(EventLine):
     def __init__(self, comment):
         self.comment = comment
 
+class Padj(EventLine):
+    # This allegedly only happened on 9/28/1995 (https://www.retrosheet.org/eventfile.htm)
+    # But I'm seeing it in CIN201905040 from 2019
+    def __init__(self, playerID, hand):
+        self.playerID = playerID
+        self.hand = hand
+
 class Badj(EventLine):
     def __init__(self, playerID, hand):
         self.playerID = playerID
@@ -97,16 +105,22 @@ class_for = {
     'info': Info,
     'data': Data,
     'com': Com,
+    'padj': Padj,
     'badj': Badj,
     'radj': Radj,
 }
     
 def pythonify_line(line):
     """
-    Turn one parsed line from the event file into one of the objects defined in this file
+    Turn one parsed line from the event file into one of the objects defined here.
+    If the line is not recognized, return None and log an error
     @param line - array where each element is one field from one line of the event file.
                   The first element should be the field name.
     """
+    fieldname = line[0]
+    if fieldname not in class_for:
+        log.error("Unrecognized fieldname in line: {}".format(line))
+        return None
     cls = class_for[line[0]]
     return cls(*line[1:])
 

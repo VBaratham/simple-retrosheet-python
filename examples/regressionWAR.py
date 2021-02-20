@@ -44,10 +44,10 @@ def check_outdir(outdir, overwrite):
                             " --create-dataset is passed. Pass --overwrite to continue anyways")
         
 
-def create_dataset(event_file, data_dir, ngames):
+def create_dataset(event_files, data_dir, ngames):
 
     # Main analysis object
-    analysis = Analysis(filename=event_file)
+    analysis = Analysis(filenames=event_files)
 
     # Register a handler that keeps track of all players who play in
     # the sample of games we analyze. This is only used to trim the array
@@ -79,30 +79,43 @@ def create_dataset(event_file, data_dir, ngames):
     # at a time.
 
     def endofgame(handlers):
-        log.debug("In endofgame()")
         nonlocal game_i
-        # Grab the # of innings played by each player on the home and away teams
-        inn_played_home = handlers['inn_played'].home.inn_played
-        inn_played_away = handlers['inn_played'].away.inn_played
+        log.debug("In endofgame()")
 
-        away_i = game_i * 2 + AWAY
-        home_i = game_i * 2 + HOME
-
-        # Place this game's data in sparse array
-        x[away_i, :] = utils.to_row(inn_played_away)
-        x[home_i, :] = utils.to_row(inn_played_home)
-
-        # TODO future: construct in standard CSR representation
-        # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-
-        # Determine who won and put +1 or -1 into the y vector
-        winning_homeaway, winning_team = handlers['winner'].get_winning_team()
-        if winning_homeaway == AWAY:
-            y[away_i] = +1
-            y[home_i] = -1
+        # Check if any handlers errored. Only process this game's data if no handlers errored
+        err_handlers = [h for h in handlers.values() if h.error]
+        if err_handlers:
+            log.info("Could not process game {} because of these errored handlers: {}".format(
+                handlers['trigger'].current_gameID, err_handlers)
+            )
+            for handler in err_handlers:
+                # In this analysis, we resolve errors by skipping the game
+                # So there's no work to do before marking the error resolved.
+                # The handler will get reset at the end of the game as usual.
+                handler.resolve_error()
         else:
-            y[away_i] = -1
-            y[home_i] = +1
+            # Grab the # of innings played by each player on the home and away teams
+            inn_played_home = handlers['inn_played'].home.inn_played
+            inn_played_away = handlers['inn_played'].away.inn_played
+
+            away_i = game_i * 2 + AWAY
+            home_i = game_i * 2 + HOME
+
+            # Place this game's data in sparse array
+            x[away_i, :] = utils.to_row(inn_played_away)
+            x[home_i, :] = utils.to_row(inn_played_home)
+
+            # TODO future: construct in standard CSR representation
+            # see https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
+
+            # Determine who won and put +1 or -1 into the y vector
+            winning_homeaway, winning_team = handlers['winner'].get_winning_team()
+            if winning_homeaway == AWAY:
+                y[away_i] = +1
+                y[home_i] = -1
+            else:
+                y[away_i] = -1
+                y[home_i] = +1
 
         # Finally, reset all handlers for the next game
         for hname in ['inn_played', 'winner']:
@@ -157,16 +170,14 @@ def regression(data_dir=None, x=None, y=None, activeIDs=None):
 
     log.info("Done.")
 
-    import ipdb; ipdb.set_trace()
-
 if __name__ == '__main__':
     parser = ArgumentParser(description="Linearly regress wins on innings played using the MLB retrosheet")
     # parser.add_arugment("--year-from", "--start-year", type=int, required=False, default=2020,
     #                     help="First year to analyze")
     # parser.add_arugment("--year-to", "--end-year", type=int, required=False, default=2020,
     #                     help="Last year to analyze")
-    parser.add_argument("--event-file", type=str, required=False, default="2020BOS.EVA",
-                        help="Event file from MLB retrosheet. Required if not using stdin")
+    parser.add_argument("--event-files", type=str, nargs='+', required=False, default=None,
+                        help="Event file(s) from MLB retrosheet. Required if not using stdin")
     parser.add_argument("--data-dir", type=str, required=False, default='./regressionWARdata',
                         help="directory where data should be stored (if --create-dataset is" + \
                         " passed) and/or read from (if --regression is passed)")
@@ -194,7 +205,7 @@ if __name__ == '__main__':
     x, y, activeIDs = None, None, None
     if args.create_dataset:
         check_outdir(args.data_dir, args.overwrite)
-        x, y, activeIDs = create_dataset(args.event_file, args.data_dir, args.ngames)
+        x, y, activeIDs = create_dataset(args.event_files, args.data_dir, args.ngames)
 
     if args.regression:
         regression(data_dir=args.data_dir, x=x, y=y, activeIDs=activeIDs)

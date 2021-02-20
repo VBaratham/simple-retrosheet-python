@@ -1,7 +1,7 @@
 import re
 import logging as log
 
-from retrosheet import HOME, AWAY
+from retrosheet import HOME, AWAY, NonfatalHandlerException
 from .handler import Handler
 """
 Handler to keep track of the current inning
@@ -14,10 +14,17 @@ doubleplay_regex = re.compile("(?:\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\))")
 tripleplay_regex = re.compile("(?:\d+\(\d\)\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\)\d+\)\d\))")
 
 # {baserunner: B123} "X" {base advancing to: 123H} not followed by {error: "(*E*)"}
-caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!\(\d*E\d*\))") 
+caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!\(\d*E\d*\))")
+
+class WrongInningException(NonfatalHandlerException):
+    """
+    Exception class for when we lose track of the inning
+    """
+    pass
 
 class Inning(Handler):
     def __init__(self):
+        super(Inning, self).__init__()
         self.tot_outs = 0
 
     def handle_id(self):
@@ -51,7 +58,7 @@ class Inning(Handler):
             event = play.event
             
         if (self.inning != play.inning) or (self.at_bat != play.homeaway):
-            raise Exception("Lost track of # outs or inning. We think the inning is: {} with {} out, at bat = {}. Current play (not processed yet): {}".format(self.inning, self.out, self.at_bat, play))
+            raise WrongInningException("Lost track of # outs or inning. We think the inning is: {} with {} out, at bat = {}. Current play (not processed yet): {}. Note the error in processing may have been several plays ago.".format(self.inning, self.out, self.at_bat, play))
 
         # TODO: replace this all w/ a regex
 

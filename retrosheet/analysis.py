@@ -12,12 +12,27 @@ from fileinput import FileInput
 
 from retrosheet.event import pythonify_line
 
-class StopAnalysis(Exception):
+class FatalHandlerException(Exception):
+    """
+    Class of exceptions that should stop the analysis immediately
+    """
+    pass
+
+class NonfatalHandlerException(Exception):
+    """
+    Class of exceptions that cause a handler to enter the error state
+    but not terminate the analysis
+    """
+    pass
+
+class StopAnalysis(FatalHandlerException):
     """
     A handler or trigger should raise this exception to stop the
     analysis before all games/events have been read
     """
     pass
+
+    
 
 class Analysis(object):
     def __init__(self, filename=None, filenames=None):
@@ -53,21 +68,9 @@ class Analysis(object):
         reader = csv.reader(self._retrosheet_as_filelike())
         for line in reader:
             log.debug(line)
-            yield pythonify_line(line)
-            
-    # def _get_raw_stream(self):
-    #     """
-    #     Check whether files or STDIN is being used;
-    #     return an iterator over all lines of the retrosheet
-    #     """
-    #     if self.filenames is not None:
-    #         for fn in self.filenames:
-    #             with open(fn) as retrosheet:
-    #                 for line in retrosheet:
-    #                     yield line
-    #     else:
-    #         for line in sys.stdin:
-    #             yield line
+            pyline = pythonify_line(line)
+            if pyline:
+                yield pyline
 
     def register_handler(self, name, handler):
         """
@@ -80,14 +83,6 @@ class Analysis(object):
 
     def register_trigger(self, name, trigger):
         self.triggers[name] = trigger
-
-    # def fire_triggers(self, trigger_names):
-    #     """
-    #     When a handler returns a trigger, look for a trigger registered under
-    #     the given names and call them
-    #     """
-    #     for trigger_name in trigger_names:
-    #         self.triggers[trigger_name]()
 
     def fire_trigger(self, trigger_name):
         # A trigger is a function that receives the dictionary of
@@ -106,23 +101,20 @@ class Analysis(object):
         
         try:
             for pyline in self._get_python_stream():
-                # Fire triggers after all handlers have processed the line:
-                # triggers_to_fire = []
-                # for handler in self.handlers.values():
-                #     new_trigger = handler.handle(pyline)
-                #     if new_trigger:
-                #         triggers_to_fire.append(new_trigger)
-                # self.fire_triggers(triggers_to_fire)
-
-                # Fire triggers as soon as they're triggered. Users will
-                # have to be careful to add triggering handlers in the
-                # correct order:
                 for handler in self.handlers.values():
-                    trigger_name = handler.handle(pyline)
+                    try:
+                        # run the handler
+                        trigger_name = handler.handle(pyline)
+                    except NonfatalHandlerException as e:
+                        log.error(e)
+                        handler.mark_error()
+
+                    # if the handler returned a trigger, fire it
                     if trigger_name:
                         self.fire_trigger(trigger_name)
-        except StopAnalysis:
-            pass
+                        
+        except FatalHandlerException as e:
+            log.error(e)
 
         self.postprocess()
                 

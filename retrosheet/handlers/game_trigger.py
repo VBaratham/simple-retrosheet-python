@@ -1,4 +1,5 @@
 from .handler import Handler
+import logging as log
 """
 This Handler just fires a trigger when it encounters an "ID" record, which terminates the previous game
 """
@@ -15,15 +16,18 @@ class GameTrigger(Handler):
                                only ID record that doesn't indicate the end of a game.
                                 
         """
+        super(GameTrigger, self).__init__()
         self.trigger_name = trigger_name
         self.fire_on_first = fire_on_first
-        self.seen_one = False
+        self.current_gameID = None
 
     def handle_id(self, _id):
-        if self.seen_one:
+        if self.current_gameID:
+            log.debug("Another game: {}".format(self.current_gameID))
             return self.trigger_name
         else:
-            self.seen_one = True
+            log.debug("First game: {}".format(_id.gameID))
+            self.current_gameID = _id.gameID
 
     def reset(self):
-        pass
+        self.error = False

@@ -5,6 +5,8 @@ Handler to determine who won the game by comparing the winning pitcher to the ro
 """
 class Winner(Handler):
     def __init__(self):
+        super(Winner, self).__init__()
+        
         # List of pitchers for the home and away teams
         self.pitcherIDs = [set(), set()]
 
