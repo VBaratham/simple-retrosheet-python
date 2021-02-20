@@ -19,15 +19,21 @@ class GameTrigger(Handler):
         super(GameTrigger, self).__init__()
         self.trigger_name = trigger_name
         self.fire_on_first = fire_on_first
+        self.prev_gameID = None
         self.current_gameID = None
 
-    def handle_id(self, _id):
-        if self.current_gameID:
-            log.debug("Another game: {}".format(self.current_gameID))
+    def advance_game(self, gameID):
+        """
+        Begin the next game
+        """
+        self.prev_gameID = self.current_gameID
+        self.current_gameID = gameID
+        if self.prev_gameID:
+            # Was not first game
             return self.trigger_name
-        else:
-            log.debug("First game: {}".format(_id.gameID))
-            self.current_gameID = _id.gameID
+
+    def handle_id(self, _id):
+        return self.advance_game(_id.gameID)
 
     def reset(self):
         self.error = False

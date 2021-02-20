@@ -1,3 +1,5 @@
+import logging as log
+
 from retrosheet import HOME, AWAY
 from .handler import Handler
 """
@@ -30,6 +32,9 @@ class Winner(Handler):
         elif info.fieldname == 'hometeam':
             self.hometeam = info.data
         elif info.fieldname == 'wp':
+            if not info.data:
+                log.info("Current game has empty winning pitcher (info,wp) record")
+                self.mark_error()
             self.wp = info.data
 
     def get_winning_team(self):

@@ -81,7 +81,9 @@ def create_dataset(event_files, data_dir, ngames):
 
     def endofgame(handlers):
         nonlocal game_i
-        log.debug("In endofgame()")
+        log.info("Processing game {} ({} of {})".format(
+            handlers['trigger'].prev_gameID, game_i, ngames
+        ))
 
         # Check if any handlers errored. Only process this game's data if no handlers errored
         err_handlers = [h for h in handlers.values() if h.error]
@@ -126,7 +128,7 @@ def create_dataset(event_files, data_dir, ngames):
         if game_i >= ngames:
             raise StopAnalysis()
 
-        log.info("Processed game {} of {}".format(game_i, ngames))
+
 
     # Register this trigger to the analysis:
     analysis.register_trigger('endofgame', endofgame)
@@ -136,7 +138,8 @@ def create_dataset(event_files, data_dir, ngames):
 
     # The final game does not end with 'id' record, so we need to manually
     # fire the trigger to process it:
-    # analysis.fire_trigger('endofgame')
+    analysis.handlers['trigger'].advance_game("lastgame")
+    analysis.fire_trigger('endofgame')
 
     # Trim columns of X representing players who didn't play
     # in the sample of games we analyzed, and convert to coo
