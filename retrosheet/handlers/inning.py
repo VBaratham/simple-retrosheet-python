@@ -11,9 +11,9 @@ Handler to keep track of the current inning
 
 # Grounded double plays take the form $(%)$, triple plays $(%)$(%)$
 # Lined double plays take the form $(B)$(%), triple plays $(B)$(%)$(%)
-# Where "$" represents 1 or more fielders and "%" represents a runner (all digits)
+# Where "$" represents 1 or more fielders (digit) and "%" represents a runner (digit or "B")
 doubleplay_regex = re.compile("(?:\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\))")
-tripleplay_regex = re.compile("(?:\d+\(\d\)\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\)\d+\)\d\))")
+tripleplay_regex = re.compile("(?:\d+\(\d\)\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\)\d+\(\d\))|(?:\d+\(\d\)\d+\(B\)\d+\(\d\))")
 
 # {baserunner: B123} "X" {base advancing to: 123H} not followed by { optional: "(UR)" {error: "(*E*)"} }
 caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!(\(UR\))?\(\d*E\d*\))")
@@ -57,6 +57,10 @@ class Inning(Handler):
 
     def handle_play(self, play):
 
+        # "!" marks an exceptional play and "?" some uncertainty. According to
+        # https://www.retrosheet.org/eventfile.htm, both can safely be ignored
+        play.event = play.event.replace('!', '').replace('?', '')
+
         if play.event.startswith('K+'):
             # Strikeout + other event. Count the strikeout here,
             # parse the rest of the event in the rest of this function
@@ -79,36 +83,35 @@ class Inning(Handler):
             basic_play = event.split('/')[0]
             if "E" not in basic_play:
                 if tripleplay_regex.match(basic_play):
+                    log.debug("Triple play, +3 outs")
                     self.tot_outs += 3
                 elif doubleplay_regex.match(basic_play):
+                    log.debug("Double play, +2 outs")
                     self.tot_outs += 2
                 else:
+                    log.debug("1 out on the play")
                     self.tot_outs += 1
                 
-
-        # I think the best way to do this would be to split the play
-        # on '+' and parse each separately (recursively?) (split the
-        # entire play, not just the basic play before '/', because the
-        # stuff after '/' applies only to the 2nd event)
-        
-
         # STRIKEOUT
         elif event[0] == 'K':
             if "B-" not in play.event and "BX" not in event:
                 # "B-" is Batter reached (i.e. passed ball)
                 # "BX" is Batter out advancing, which is counted below
+                log.debug("Strikeout, +1 out")
                 self.tot_outs += 1
 
         # CAUGHT STEALING
         elif event.startswith('CS'):
             # A runner is caught stealing iff there was no error on the pickoff attempt
-            if not caughtstealing_error_regex.match(event):
+            if not caughtstealing_error_regex.match(event.split('.')[0]):
+                log.debug("Runner caught stealing, +1 out")
                 self.tot_outs += 1
 
         # PICKOFF
         # A runner is picked off iff there was no error on the pickoff attempt
         elif event.startswith('PO'):
             if not pickoff_error_regex.match(event):
+                log.debug("Runner picked off, +1 out")
                 self.tot_outs += 1
                 
         # FC for fielder's choice would be accompanied by X if an out was made
