@@ -13,8 +13,15 @@ Handler to keep track of the current inning
 doubleplay_regex = re.compile("(?:\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\))")
 tripleplay_regex = re.compile("(?:\d+\(\d\)\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\)\d+\)\d\))")
 
-# {baserunner: B123} "X" {base advancing to: 123H} not followed by {error: "(*E*)"}
-caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!\(\d*E\d*\))")
+# {baserunner: B123} "X" {base advancing to: 123H} not followed by { optional: "(*)" {error: "(*E*)"} }
+caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!(\(.*\))?\(\d*E\d*\))")
+
+# "CS" {base advancing to: 23H} {error: "(*E*)"}
+# negates "CS"
+caughtstealing_error_regex = re.compile("CS[23H]\(.*E.*\)")
+
+# "PO" ["CS"] {base: 123H} {error: "(*E*)"}
+pickoff_error_regex = re.compile("PO(CS)?[123H]\(.*E.*\)")
 
 class WrongInningException(NonfatalHandlerException):
     """
@@ -48,7 +55,8 @@ class Inning(Handler):
     def handle_play(self, play):
 
         if play.event.startswith('K+'):
-            # Strikeout + other event
+            # Strikeout + other event. Count the strikeout here,
+            # parse the rest of the event in the rest of this function
             first_play, event = play.event.split('+')
             if "B-" not in play.event:
                 self.tot_outs += 1
@@ -90,13 +98,13 @@ class Inning(Handler):
         # CAUGHT STEALING
         elif event.startswith('CS'):
             # A runner is caught stealing iff there was no error on the pickoff attempt
-            if event.find('E') == -1:
+            if not caughtstealing_error_regex.match(event):
                 self.tot_outs += 1
 
         # PICKOFF
         # A runner is picked off iff there was no error on the pickoff attempt
         elif event.startswith('PO'):
-            if event.find('E') == -1:
+            if not pickoff_error_regex.match(event):
                 self.tot_outs += 1
                 
         # FC for fielder's choice would be accompanied by X if an out was made
