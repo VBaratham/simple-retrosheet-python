@@ -67,7 +67,8 @@ def create_dataset(event_files, data_dir, ngames):
     # Define data structures where we will store analysis results
     nplayers = len(utils.playerID_to_idx)
     y = np.zeros(shape=2*ngames)
-    x = scipy.sparse.csr_matrix((2*ngames, nplayers))
+    # x = scipy.sparse.csr_matrix((2*ngames, nplayers))
+    x = np.zeros(shape=(2*ngames, nplayers))
 
     game_i = 0 # counter of how many games we've processed
     # Index game_i * 2 + AWAY represents the away team of game game_i (AWAY = 0)
@@ -144,7 +145,8 @@ def create_dataset(event_files, data_dir, ngames):
     # https://scikit-learn.org/stable/auto_examples/linear_model/plot_lasso_dense_vs_sparse_data.html
     activeIDs = np.array([utils.playerID_to_idx[playerID] for playerID in actives.playerIDs])
     activeIDs = sorted(activeIDs)
-    x = x.tocsc()[:, activeIDs].tocoo()
+    # x = x.tocsc()[:, activeIDs].tocoo()
+    x = scipy.sparse.coo_matrix(x[:, activeIDs])
 
     # Save the arrays to disk
     scipy.sparse.save_npz(os.path.join(data_dir, NPZ_FILENAME), x)
@@ -157,7 +159,7 @@ def create_dataset(event_files, data_dir, ngames):
 def regression(data_dir=None, x=None, y=None, activeIDs=None):
     # Load data if not passed in
     if x is None:
-        x = scipy.sparse.load_npz(os.path.join(data_dir, NPZ_FILENAME))
+        x = scipy.sparse.load_npz(os.path.join(data_dir, NPZ_FILENAME)).todense()
     if y is None or activeIDs is None:
         y, activeIDs = load_h5(data_dir)
 
