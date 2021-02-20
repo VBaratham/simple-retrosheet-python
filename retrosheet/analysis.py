@@ -11,6 +11,13 @@ from fileinput import FileInput
 
 from retrosheet.event import pythonify_line
 
+class StopAnalysis(Exception):
+    """
+    A handler or trigger should raise this exception to stop the
+    analysis before all games/events have been read
+    """
+    pass
+
 class Analysis(object):
     def __init__(self, filename=None, filenames=None):
         """
@@ -96,22 +103,25 @@ class Analysis(object):
     def run(self):
         self.preprocess()
         
-        for pyline in self._get_python_stream():
-            # Fire triggers after all handlers have processed the line:
-            # triggers_to_fire = []
-            # for handler in self.handlers.values():
-            #     new_trigger = handler.handle(pyline)
-            #     if new_trigger:
-            #         triggers_to_fire.append(new_trigger)
-            # self.fire_triggers(triggers_to_fire)
+        try:
+            for pyline in self._get_python_stream():
+                # Fire triggers after all handlers have processed the line:
+                # triggers_to_fire = []
+                # for handler in self.handlers.values():
+                #     new_trigger = handler.handle(pyline)
+                #     if new_trigger:
+                #         triggers_to_fire.append(new_trigger)
+                # self.fire_triggers(triggers_to_fire)
 
-            # Fire triggers as soon as they're triggered. Users will
-            # have to be careful to add triggering handlers in the
-            # correct order:
-            for handler in self.handlers.values():
-                trigger_name = handler.handle(pyline)
-                if trigger_name:
-                    self.fire_trigger(trigger_name)
+                # Fire triggers as soon as they're triggered. Users will
+                # have to be careful to add triggering handlers in the
+                # correct order:
+                for handler in self.handlers.values():
+                    trigger_name = handler.handle(pyline)
+                    if trigger_name:
+                        self.fire_trigger(trigger_name)
+        except StopAnalysis:
+            pass
 
         self.postprocess()
                 

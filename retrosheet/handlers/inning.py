@@ -10,7 +10,10 @@ Handler to keep track of the current inning
 # Lined double plays take the form $(B)$(%), triple plays $(B)$(%)$(%)
 # Where "$" represents 1 or more fielders and "%" represents a runner (all digits)
 doubleplay_regex = re.compile("(?:\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\))")
-tripleplay_regex = re.compile("XXXXXXXXXX")
+tripleplay_regex = re.compile("(?:\d+\(\d\)\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\)\d+\)\d\))")
+
+# {baserunner: B123} "X" {base advancing to: 123H} not followed by "(
+caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!\(\d*E\d*\))") 
 
 class Inning(Handler):
     def __init__(self):
@@ -54,12 +57,13 @@ class Inning(Handler):
         # FLYOUT OR GROUNDOUT
         if event[0].isdigit():
             basic_play = event.split('/')[0]
-            if tripleplay_regex.match(basic_play):
-                self.tot_outs += 3
-            elif doubleplay_regex.match(basic_play):
-                self.tot_outs += 2
-            else:
-                self.tot_outs += 1
+            if "E" not in basic_play:
+                if tripleplay_regex.match(basic_play):
+                    self.tot_outs += 3
+                elif doubleplay_regex.match(basic_play):
+                    self.tot_outs += 2
+                else:
+                    self.tot_outs += 1
                 
 
         # I think the best way to do this would be to split the play
@@ -94,7 +98,10 @@ class Inning(Handler):
         # X in the "advance" part of the event string, which starts
         # after "."
         if '.' in event:
-            self.tot_outs += event.split('.')[-1].count('X')
+            advances = event.split('.')[-1]
+            out_advancing = len(caughtadvancing_noerror_regex.findall(advances))
+            print(out_advancing)
+            self.tot_outs += out_advancing
 
         print("Inning {}, {} out, at bat = {}".format(self.inning, self.out, self.at_bat))
 
