@@ -12,7 +12,7 @@ Handler to keep track of the current inning
 doubleplay_regex = re.compile("(?:\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\))")
 tripleplay_regex = re.compile("(?:\d+\(\d\)\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\)\d+\)\d\))")
 
-# {baserunner: B123} "X" {base advancing to: 123H} not followed by "(
+# {baserunner: B123} "X" {base advancing to: 123H} not followed by {error: "(*E*)"}
 caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!\(\d*E\d*\))") 
 
 class Inning(Handler):
