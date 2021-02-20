@@ -7,14 +7,17 @@ from .handler import Handler
 Handler to keep track of the current inning
 """
 
+# TODO: "U" for unknown fielders?
+
 # Grounded double plays take the form $(%)$, triple plays $(%)$(%)$
 # Lined double plays take the form $(B)$(%), triple plays $(B)$(%)$(%)
 # Where "$" represents 1 or more fielders and "%" represents a runner (all digits)
 doubleplay_regex = re.compile("(?:\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\))")
 tripleplay_regex = re.compile("(?:\d+\(\d\)\d+\(\d\)\d+)|(?:\d+\(B\)\d+\(\d\)\d+\)\d\))")
 
-# {baserunner: B123} "X" {base advancing to: 123H} not followed by { optional: "(*)" {error: "(*E*)"} }
-caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!(\(.*\))?\(\d*E\d*\))")
+# {baserunner: B123} "X" {base advancing to: 123H} not followed by { optional: "(UR)" {error: "(*E*)"} }
+caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!(\(UR\))?\(\d*E\d*\))")
+# caughtadvancing_noerror_regex = re.compile("[B\d]X[H\d](?!\(\d*E\d*\))")
 
 # "CS" {base advancing to: 23H} {error: "(*E*)"}
 # negates "CS"
@@ -66,6 +69,7 @@ class Inning(Handler):
             event = play.event
             
         if (self.inning != play.inning) or (self.at_bat != play.homeaway):
+            import ipdb; ipdb.set_trace()
             raise WrongInningException("Lost track of # outs or inning. We think the inning is: {} with {} out, at bat = {}. Current play (not processed yet): {}. Note the error in processing may have been several plays ago.".format(self.inning, self.out, self.at_bat, play))
 
         # TODO: replace this all w/ a regex
@@ -114,9 +118,10 @@ class Inning(Handler):
         # X in the "advance" part of the event string, which starts
         # after "."
         if '.' in event:
+            # TODO: if more than 1 runners are advancing, they'll be separated by semicolon
             advances = event.split('.')[-1]
             out_advancing = len(caughtadvancing_noerror_regex.findall(advances))
-            log.debug(out_advancing)
+            log.debug("{} outs on baserunners advancing".format(out_advancing))
             self.tot_outs += out_advancing
 
         log.debug("Inning {}, {} out, at bat = {}".format(self.inning, self.out, self.at_bat))
