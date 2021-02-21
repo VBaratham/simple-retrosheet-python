@@ -138,8 +138,8 @@ def create_dataset(event_files, data_dir, ngames):
 
     # The final game does not end with 'id' record, so we need to manually
     # fire the trigger to process it:
-    analysis.handlers['trigger'].advance_game("lastgame")
-    analysis.fire_trigger('endofgame')
+    # analysis.handlers['trigger'].advance_game("lastgame")
+    # analysis.fire_trigger('endofgame')
 
     # Trim columns of X representing players who didn't play
     # in the sample of games we analyzed, and convert to coo
@@ -157,6 +157,8 @@ def create_dataset(event_files, data_dir, ngames):
         outfile.create_dataset('y', data=y)
         outfile.create_dataset('activeIDs', data=activeIDs)
 
+    log.info("Saved datasets")
+
     return x, y, activeIDs
     
 def regression(data_dir=None, x=None, y=None, activeIDs=None):
@@ -169,6 +171,8 @@ def regression(data_dir=None, x=None, y=None, activeIDs=None):
     # Perform linear regression
     reg = linear_model.LinearRegression()
     reg.fit(x, y)
+
+    import ipdb; ipdb.set_trace()
 
     # Save regression results to disk
     joblib.dump(reg, RESULTS_FILENAME)

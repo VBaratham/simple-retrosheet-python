@@ -73,7 +73,6 @@ class Inning(Handler):
             event = play.event
             
         if (self.inning != play.inning) or (self.at_bat != play.homeaway):
-            import ipdb; ipdb.set_trace()
             raise WrongInningException("Lost track of # outs or inning. We think the inning is: {} with {} out, at bat = {}. Current play (not processed yet): {}. Note the error in processing may have been several plays ago.".format(self.inning, self.out, self.at_bat, play))
 
         # TODO: replace this all w/ a regex
